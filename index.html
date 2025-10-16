@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Round Robin Scheduler</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #eef2f3;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      width: 400px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 10px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+    .error {
+      color: red;
+      text-align: center;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚙️ Round Robin Scheduler</h1>
+
+    <form id="rrForm">
+      <label>Processes (comma separated):</label>
+      <input type="text" id="processes" value="P1,P2,P3" required>
+
+      <label>Burst Times (comma separated):</label>
+      <input type="text" id="burstTimes" value="10,5,8" required>
+
+      <label>Time Quantum:</label>
+      <input type="number" id="quantum" value="2" required>
+
+      <button type="submit">Calculate</button>
+    </form>
+
+    <div id="results"></div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('rrForm');
+      const resultsDiv = document.getElementById('results');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const processes = document.getElementById('processes').value.split(',').map(x => x.trim());
+        const burstTimes = document.getElementById('burstTimes').value.split(',').map(x => x.trim());
+        const quantum = document.getElementById('quantum').value;
+
+        try {
+          const res = await fetch('/calculate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ processes, burstTimes, quantum })
+          });
+
+          if (!res.ok) throw new Error("Backend not running");
+
+          const data = await res.json();
+          let html = `
+            <h3>Results</h3>
+            <table>
+              <tr><th>Process</th><th>Waiting Time</th><th>Turnaround Time</th></tr>`;
+          for (let i = 0; i < processes.length; i++) {
+            html += `<tr>
+              <td>${processes[i]}</td>
+              <td>${data.waiting_time[i]}</td>
+              <td>${data.turnaround_time[i]}</td>
+            </tr>`;
+          }
+          html += `</table>
+            <p><b>Average Waiting Time:</b> ${data.avg_wait.toFixed(2)}</p>
+            <p><b>Average Turnaround Time:</b> ${data.avg_turn.toFixed(2)}</p>`;
+          resultsDiv.innerHTML = html;
+        } catch (error) {
+          resultsDiv.innerHTML = `<p class="error">⚠️ Please run <b>app.py</b> to calculate results.</p>`;
+        }
+      });
+    });
+  </script>
+</body>
+</html>
